@@ -48,6 +48,9 @@ jobs:
     environment: prd
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download MTAR artifact
         uses: actions/download-artifact@v4
         with:
@@ -66,4 +69,32 @@ jobs:
         run: cf login -a ${{ vars.CF_API }} -u ${{ secrets.CF_USER }} -p '${{ secrets.CF_PASSWORD }}' -o "${{ vars.CF_ORG }}" -s ${{ vars.CF_SPACE }}
 
       - name: Deploy
-        run: cf deploy mta_archives/*.mtar
+        run: npm run deploy:prd
+
+  release:
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Download MTAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mtar-package
+          path: mta_archives
+
+      - name: Get version from MTAR
+        id: version
+        run: |
+          FILE=$(ls mta_archives/*.mtar)
+          VERSION=$(echo $FILE | grep -oP '\d+\.\d+\.\d+')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: Release v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false

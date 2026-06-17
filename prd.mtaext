@@ -1,0 +1,8 @@
+_schema-version: 3.3.0
+ID: cap-pg-student-prd
+extends: cap-pg-student
+
+modules:
+  - name: cap-pg-student-srv
+    parameters:
+      host: prd-cap-pg-student
