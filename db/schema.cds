@@ -16,6 +16,6 @@ entity Student : cuid, managed {
     first_name : String(20);
     last_name  : String(20);
     dob        : Date;
-    email      : String;
+    email      : String(100);
     stream     : Stream;
 }
