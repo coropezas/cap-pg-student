@@ -1,0 +1,96 @@
+name: Build & Deploy - PG Student - QAS (Manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # mbt build ejecuta npm ci internamente via mta.yaml (before-all)
+      # - name: Install dependencies
+      #   run: npm ci
+
+      - name: Install MBT
+        run: npm install -g mbt
+
+      - name: Install CF CLI
+        run: |
+          curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8" | tar -zx
+          sudo mv cf8 /usr/local/bin/cf
+
+      - name: Install MTA plugin
+        run: cf install-plugin multiapps -f
+
+      - name: MBT Build
+        run: mbt build
+
+      - name: Upload MTAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mtar-package
+          path: mta_archives/*.mtar
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download MTAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mtar-package
+          path: mta_archives
+
+      - name: Install CF CLI
+        run: |
+          curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8" | tar -zx
+          sudo mv cf8 /usr/local/bin/cf
+
+      - name: Install MTA plugin
+        run: cf install-plugin multiapps -f
+
+      - name: CF Login
+        run: cf login -a ${{ vars.CF_API }} -u ${{ secrets.CF_USER }} -p '${{ secrets.CF_PASSWORD }}' -o "${{ vars.CF_ORG }}" -s ${{ vars.CF_SPACE }}
+
+      - name: Deploy
+        run: npm run deploy:dev
+
+  release:
+    runs-on: ubuntu-latest
+    needs: deploy
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download MTAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mtar-package
+          path: mta_archives
+
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(ls mta_archives/*.mtar | grep -oP '\d+\.\d+\.\d+')
+          gh release create v$VERSION \
+            --title "Release v$VERSION" \
+            --generate-notes
+          # Para adjuntar el .mtar al release para rollback permanente (artifacts se eliminan a los 90 dias):
+          # gh release create v$VERSION --title "Release v$VERSION" --generate-notes mta_archives/*.mtar
