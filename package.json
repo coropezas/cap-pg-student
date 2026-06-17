@@ -1,0 +1,69 @@
+{
+  "name": "cap-pg-student",
+  "version": "1.0.0",
+  "description": "A simple CAP project.",
+  "repository": "<Add your repository here>",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@sap/cds": "^9",
+    "express": "^4",
+    "@cap-js/postgres": "^2",
+    "@sap/xssec": "^4"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@cap-js/cds-types": "^0.12.0",
+    "@cap-js/sqlite": "^2",
+    "@sap/cds-dk": ">=8"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "start:local": "cds watch",
+    "deploy": "cf deploy mta_archives/cap-pg-student_1.0.0.mtar"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "postgres",
+        "impl": "@cap-js/postgres",
+        "credentials": {
+          "host": "localhost",
+          "port": 5432,
+          "user": "postgres",
+          "password": "postgres",
+          "database": "student"
+        }
+      },
+      "[development]": {
+        "auth": {
+          "kind": "mocked",
+          "users": {
+            "student.viewer@aol.com": {
+              "password": "12345",
+              "roles": [
+                "StudentViewer"
+              ]
+            },
+            "student.admin@aol.com": {
+              "password": "12345",
+              "roles": [
+                "StudentAdmin"
+              ]
+            },
+            "bob": {
+              "roles": [
+                "support"
+              ]
+            }
+          }
+        }
+      },
+      "[production]": {
+        "auth": "xsuaa"
+      }
+    }
+  }
+}
