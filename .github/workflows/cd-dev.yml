@@ -1,0 +1,43 @@
+name: Build & Deploy - PG Student - DEV
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # mbt build ya ejecuta npm ci internamente via mta.yaml (before-all), por eso se omite aqui
+      # - name: Install dependencies
+      #   run: npm ci
+
+      - name: Install MBT
+        run: npm install -g mbt
+
+      - name: Install CF CLI
+        run: |
+          curl -L "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8" | tar -zx
+          sudo mv cf8 /usr/local/bin/cf
+
+      - name: Install MTA plugin
+        run: cf install-plugin multiapps -f
+
+      - name: MBT Build
+        run: mbt build
+
+      - name: CF Login
+        run: cf login -a ${{ vars.CF_API }} -u ${{ secrets.CF_USER }} -p '${{ secrets.CF_PASSWORD }}' -o "${{ vars.CF_ORG }}" -s ${{ vars.CF_SPACE }}
+
+      - name: Deploy
+        run: npm run deploy

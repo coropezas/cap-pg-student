@@ -1,4 +1,4 @@
-using {cap_app_pg as cpg} from '../db/Schema';
+using {cap_app_pg as cpg} from '../db/schema';
 
 @path: 'Student'
 service StudentService {
