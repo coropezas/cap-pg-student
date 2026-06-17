@@ -22,7 +22,9 @@
   "scripts": {
     "start": "cds-serve",
     "start:local": "cds watch",
-    "deploy": "cf deploy mta_archives/cap-pg-student_1.0.0.mtar"
+    "deploy": "cf deploy mta_archives/cap-pg-student_1.0.0.mtar",
+    "deploy:dev": "cf deploy mta_archives/*.mtar -e dev.mtaext",
+    "deploy:prd": "cf deploy mta_archives/*.mtar -e prd.mtaext"
   },
   "cds": {
     "requires": {
