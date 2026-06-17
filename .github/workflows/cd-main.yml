@@ -84,19 +84,13 @@ jobs:
           name: mtar-package
           path: mta_archives
 
-      - name: Get version from MTAR
-        id: version
-        run: |
-          FILE=$(ls mta_archives/*.mtar)
-          VERSION=$(echo $FILE | grep -oP '\d+\.\d+\.\d+')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Create Release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          release_name: Release v${{ steps.version.outputs.version }}
-          draft: false
-          prerelease: false
+        run: |
+          VERSION=$(ls mta_archives/*.mtar | grep -oP '\d+\.\d+\.\d+')
+          gh release create v$VERSION \
+            --title "Release v$VERSION" \
+            --generate-notes
+          # Para adjuntar el .mtar al release para rollback permanente (artifacts se eliminan a los 90 dias):
+          # gh release create v$VERSION --title "Release v$VERSION" --generate-notes mta_archives/*.mtar
